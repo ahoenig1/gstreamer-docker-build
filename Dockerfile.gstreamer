@@ -1,0 +1,66 @@
+############################################################################################
+# Base Image                                                                               #
+############################################################################################
+FROM nvidia/cudagl:10.0-devel-ubuntu18.04 AS base
+
+# Add some environment variables to set up this container
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+
+############################################################################################
+# GStreamer git master                                                                     #
+############################################################################################
+# Dependencies: ffmpeg libgtk2.0-0 libgudev-1.0-0 libjpeg-turbo8 libogg0 libsoup2.4-1      #
+#               libtheora0 libv4l-0 libvdpau1 libvpx5 libx264-152                          #
+# Instead of ffmpeg, can use: libavcodec57 libavdevice57 libavfilter6 libavformat57        #
+#                             libavutil55 libpostproc54 libswresample2 libswscale4         #
+############################################################################################
+RUN apt-get update -qq &&                           \
+    apt-get install -y -qq                          \
+        bison                                       \
+        build-essential                             \
+        flex                                        \
+        git                                         \
+        libavcodec-dev                              \
+        libavdevice-dev                             \
+        libavfilter-dev                             \
+        libavformat-dev                             \
+        libavutil-dev                               \
+        libgtk2.0-dev                               \
+        libgudev-1.0-dev                            \
+        libjpeg-turbo8-dev                          \
+        libogg-dev                                  \
+        libpostproc-dev                             \
+        libsoup2.4-dev                              \
+        libswresample-dev                           \
+        libswscale-dev                              \
+        libtheora-dev                               \
+        libv4l-dev                                  \
+        libvdpau-dev                                \
+        libvpx-dev                                  \
+        libx264-dev                                 \
+        lsb-release                                 \
+        ninja-build                                 \
+        pkg-config                                  \
+        python3-pip                                 \
+        unzip                                       \
+        nasm                                        \
+        wget &&                                     \
+    rm -rf /var/lib/apt/lists/*
+
+# specify that we want meson 0.53 - as of 2020.04.23 the latest meson is 0.54 but there's a bug where
+# the libav plugin from git master will NOT build with 0.54.
+RUN pip3 install meson==0.53
+
+# download gstreamer and all subprojects from git (or wherever the subprojects come from)
+RUN git clone https://github.com/GStreamer/gst-build.git
+RUN cd gst-build; meson subprojects download
+
+# build and install
+RUN meson --prefix /usr gst-build gst-build/build &&            \
+    DESTDIR=/staging ninja -C gst-build/build install
+
+FROM scratch
+COPY --from=base /staging /

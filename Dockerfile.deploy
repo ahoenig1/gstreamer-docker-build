@@ -1,0 +1,28 @@
+############################################################################################
+# Base Image                                                                               #
+############################################################################################
+FROM nvidia/cudagl:10.0-runtime-ubuntu18.04 AS base
+
+# Add some environment variables to set up this container
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+# Install GStreamer dependencies
+RUN apt-get update -qq &&                               \
+    apt-get install -y -qq                              \
+        ffmpeg                                          \
+        libgtk2.0-0                                     \
+        libgudev-1.0-0                                  \
+        libjpeg-turbo8                                  \
+        libogg0                                         \
+        libsoup2.4-1                                    \
+        libtheora0                                      \
+        libv4l-0                                        \
+        libvdpau1                                       \
+        libvpx5                                         \
+        libx264-152 &&                                  \
+     rm -rf /var/lib/apt/lists/*
+
+# Install GStreamer compiled artifacts
+COPY --from=gstreamer_artifacts:latest / /

@@ -1,0 +1,59 @@
+############################################################################################
+# Base Image                                                                               #
+############################################################################################
+FROM nvidia/cudagl:10.0-devel-ubuntu18.04 AS base
+
+# Add some environment variables to set up this container
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+# Install GStreamer dependencies
+RUN apt-get update -qq &&                               \
+    apt-get install -y -qq                              \
+        ffmpeg                                          \
+        libgtk2.0-0                                     \
+        libgudev-1.0-0                                  \
+        libjpeg-turbo8                                  \
+        libogg0                                         \
+        libsoup2.4-1                                    \
+        libtheora0                                      \
+        libv4l-0                                        \
+        libvdpau1                                       \
+        libvpx5                                         \
+        libx264-152 &&                                  \
+     rm -rf /var/lib/apt/lists/*
+
+
+# Some other general things we want for development
+RUN apt-get update -qq &&                               \
+    apt-get install -y -qq                              \
+        bzip2                                           \
+        build-essential                                 \
+        gdb                                             \
+        git                                             \
+        git-lfs                                         \
+        language-pack-en                                \
+        locales                                         \
+        ninja-build                                     \
+        openssh-client                                  \
+        patch                                           \
+        pkg-config                                      \
+        sudo                                            \
+        unzip                                           \
+        vim                                             \
+        wget &&                                         \
+    rm -rf /var/lib/apt/lists/* &&                      \
+    locale-gen en_US.UTF-8 &&                           \
+    update-locale LANG=en_US.UTF-8
+
+
+# Install GStreamer compiled artifacts
+COPY --from=gstreamer_artifacts:latest / /
+
+
+############################################################################################
+# Debugging GStreamer...                                                                   #
+############################################################################################
+# source for debugging GStreamer - you can tag your gstreamer build stage as gstreamer_build_tree and copy the source tree in here
+# COPY --from=gstreamer_build_tree /gst-build /gst-build/
